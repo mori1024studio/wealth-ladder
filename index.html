@@ -428,8 +428,8 @@ body::before{content:'';position:fixed;inset:0;background:
 const CFG = {
   lineUrl: 'https://line.me/R/ti/p/@507wvwbz',
   igUrl:   'https://instagram.com/mori1024_',
-  mlKey:   '',       // MailerLite Classic API Key
-  mlGroup: '',       // MailerLite 群組 ID
+  mlKey:   'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI0IiwianRpIjoiZGM4YTRmMjVhMjZkMTc2MzViNzI0Y2I5MTMyODFjOTc3YjY2MjhiNWVlMTkxNGQzMWQzNjcyZjJiY2YyM2QzZjVjNDA1YWZlOGFkYzEwNjYiLCJpYXQiOjE3ODEzNjczNTkuMjc2MzAxLCJuYmYiOjE3ODEzNjczNTkuMjc2MzAzLCJleHAiOjQ5MzcwNDA5NTkuMjcyMjA1LCJzdWIiOiIyNDQ5MDA2Iiwic2NvcGVzIjpbXX0.SpNhbeWuZlIBXeEsQ8dvyLPG8ZZMyl6YjhvYeh3ow6XI9VP-wgZseH9ZzpAtW2TakWtB9JvUK_rrGT4f_PUhOUKrTKwB_n6haZA8tfCl5zTl9zjr8dgwOrT-_agrR2DTKQdLUibWYXbcklK9l5Z2kkfeTkQ2S4Q8MFveIW0CK11lFYge-fFt8CbRIgB57IHTDrenMuzY58nyG_edyUOdHqTNGXKdUusOQWxp0rnbxYR48ATTkcUQcsZpn4yZMqGTZ3rwoHx2wNfBnEBCHgG2ezkAGBGtThAhz0ZozraHI5vxgvC0Vssto3w7CmZOfLQFNYjbPQmbcKH0rxcr-nkGsbnFMzWS4RfHlLn6JVTcFLS_c8GanLNcooWN1j15oBbmGd_bhBFVWpLsN9bDA489zhcxm-YHv6FWzdi6ja5X7tHJ532s27rwUcrpbnkj5RN1pkRwFvHPDVE8u0lZ9Of5E0stXxMKi6umAA-6V1yf_RYVglj2_Kh1Gm0gNTLa0X5txOzBZ0Bsv_ilgjQYseZN11bdhAyo7ZkBV1-7GkHiC861GDvFmrn7GOQuFwTCKZzYbgY3Zka2JXFPI_Yp5YhSKgPo5BbdTI-wPuIX72QJ8NjHBAnNY5s_l2G_ZLV4M_yjiwEgVandTG7T2ZuIhrrY3lLTdkPvb5jUG3mQnD5JSC4',
+  mlGroup: '190213606407669523',
   cfCounter: '',     // Cloudflare Workers counter URL
 };
 
@@ -877,9 +877,9 @@ async function submitEmail(){
   document.getElementById('emailDone').style.display='block';
   document.querySelector('.btn-skip-email').style.display='none';
   if(CFG.mlKey&&CFG.mlGroup){
-    fetch('https://api.mailerlite.com/api/v2/subscribers',{
+    fetch('https://connect.mailerlite.com/api/subscribers',{
       method:'POST',
-      headers:{'Content-Type':'application/json','X-MailerLite-ApiKey':CFG.mlKey},
+      headers:{'Content-Type':'application/json','Accept':'application/json','Authorization':'Bearer '+CFG.mlKey},
       body:JSON.stringify({email:v,groups:[CFG.mlGroup],fields:{wealth_level:lvlKey?.toUpperCase()}}),
     }).catch(()=>{});
   }
