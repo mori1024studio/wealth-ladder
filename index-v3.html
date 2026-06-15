@@ -187,6 +187,21 @@ body::before{content:'';position:fixed;inset:0;background:
 .btn-ghost-sec:hover{border-color:rgba(255,255,255,.22);color:var(--text)}
 .btn-retake{display:block;margin:16px auto 0;background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;font-family:inherit;text-decoration:underline}
 .btn-retake:hover{color:var(--text)}
+/* ── insight survey ── */
+.insight-survey{margin:28px 0 0;border-top:1px solid rgba(255,255,255,.06);padding-top:24px}
+.survey-label{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:18px}
+.survey-q{margin-bottom:18px}
+.survey-q-text{font-size:14px;color:var(--text);margin-bottom:9px;line-height:1.65}
+.survey-opts-list{display:flex;flex-direction:column;gap:7px}
+.survey-opt{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--muted);cursor:pointer;transition:var(--ease);text-align:left;font-family:inherit;width:100%;line-height:1.5}
+.survey-opt:hover{border-color:rgba(255,255,255,.14);color:var(--text)}
+.survey-opt.picked{border-color:var(--gold);color:var(--text);background:rgba(196,169,106,.07)}
+.survey-unlock{display:none;margin-top:18px;background:var(--gold);color:#0A0A0F;border:none;border-radius:100px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;transition:var(--ease)}
+.survey-unlock:hover{background:var(--gold-l)}
+.survey-unlock.show{display:block}
+.survey-result{display:none;margin-top:16px;padding:16px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;font-size:14px;line-height:1.75;color:var(--text)}
+.survey-result.show{display:block}
+.survey-result-cta{margin-top:12px;font-weight:700;color:var(--gold)}
 
 /* ── responsive ── */
 @media(max-width:520px){
@@ -410,6 +425,39 @@ body::before{content:'';position:fixed;inset:0;background:
       <!-- actions -->
       <div class="sec-tag">✅ 行動建議</div>
       <div class="actions-wrap" id="resActions"></div>
+
+      <div class="insight-survey" id="insightSurvey">
+        <div class="survey-label">✦ 更了解你現在的狀態</div>
+        <div class="survey-q">
+          <div class="survey-q-text">看到你的財富層級，你的第一反應是？</div>
+          <div class="survey-opts-list">
+            <button class="survey-opt" onclick="surveyPick(1,'A',this)">確實如此，我準備好往下一階移動了</button>
+            <button class="survey-opt" onclick="surveyPick(1,'B',this)">說得很準，但我還不確定怎麼跨出去</button>
+            <button class="survey-opt" onclick="surveyPick(1,'C',this)">有道理，只是時間、資金或精力還沒到位</button>
+            <button class="survey-opt" onclick="surveyPick(1,'D',this)">很有意思，我主要是想了解自己的財務狀態</button>
+          </div>
+        </div>
+        <div class="survey-q">
+          <div class="survey-q-text">你做這個測驗，最主要是因為？</div>
+          <div class="survey-opts-list">
+            <button class="survey-opt" onclick="surveyPick(2,'A',this)">我在找一個能提升收入的副業方向</button>
+            <button class="survey-opt" onclick="surveyPick(2,'B',this)">我想改變自己對金錢的思維和行動習慣</button>
+            <button class="survey-opt" onclick="surveyPick(2,'C',this)">朋友分享給我，或剛好看到就點了</button>
+            <button class="survey-opt" onclick="surveyPick(2,'D',this)">我在研究財務教育或這類測驗本身</button>
+          </div>
+        </div>
+        <div class="survey-q">
+          <div class="survey-q-text">如果要往下一個財富層級移動，你現在最需要的是？</div>
+          <div class="survey-opts-list">
+            <button class="survey-opt" onclick="surveyPick(3,'A',this)">一個有人帶著走、有完整系統的方法</button>
+            <button class="survey-opt" onclick="surveyPick(3,'B',this)">具體的工具、資源或行動清單</button>
+            <button class="survey-opt" onclick="surveyPick(3,'C',this)">先看看其他人的案例和結果再決定</button>
+            <button class="survey-opt" onclick="surveyPick(3,'D',this)">暫時不急，先消化這份診斷結果就好</button>
+          </div>
+        </div>
+        <button class="survey-unlock" id="surveyUnlock" onclick="revealSurveyResult()">生成我的個人化建議 →</button>
+        <div class="survey-result" id="surveyResult"></div>
+      </div>
 
       <!-- email -->
       <div class="email-box" id="emailBox">
@@ -1015,9 +1063,44 @@ async function downloadPDF(){
 /* ════════════════════════════════
    外部連結
 ════════════════════════════════ */
+/* ════ Insight Survey ════ */
+const surveyAnswers={1:null,2:null,3:null};
+function surveyPick(q,ans,btn){
+  surveyAnswers[q]=ans;
+  btn.closest('.survey-opts-list').querySelectorAll('.survey-opt').forEach(b=>b.classList.remove('picked'));
+  btn.classList.add('picked');
+  const allDone=surveyAnswers[1]&&surveyAnswers[2]&&surveyAnswers[3];
+  document.getElementById('surveyUnlock').classList.toggle('show',allDone);
+}
+function revealSurveyResult(){
+  const a=surveyAnswers[1],b=surveyAnswers[2],c=surveyAnswers[3];
+  let msg='',cta='';
+  if(a==='A'&&(b==='A'||b==='B')&&(c==='A'||c==='B')){
+    msg='你已經準備好了。你知道自己在哪個層級，也願意找方法往上移——這是真正能改變財務狀態的人具備的狀態。';
+    cta='我希望能直接跟你聊聊 →';
+  }else if((a==='A'||a==='B')&&(b==='A'||b==='B')&&c!=='D'){
+    msg='你有意願，也有自覺——現在最需要的是一個具體的起點，不是更多資訊。';
+    cta='加入 LINE，我會把第一步整理給你 →';
+  }else if(a==='C'||((b==='A'||b==='B')&&c==='C')){
+    msg='條件限制是真實的。先把方向搞清楚，等條件到位的時候你已經知道怎麼走了。';
+    cta='追蹤 IG，每週更新你可以慢慢看 →';
+  }else{
+    msg='光是願意了解自己的財務狀態，就已經比大多數人多走了一步。';
+    cta='追蹤 IG，繼續接收財務思維洞見 →';
+  }
+  const el=document.getElementById('surveyResult');
+  el.innerHTML=`<div>${msg}</div><div class="survey-result-cta">${cta}</div>`;
+  el.classList.add('show');
+  document.getElementById('surveyUnlock').style.display='none';
+}
 function openLine(){window.open(CFG.lineUrl,'_blank')}
 function openIG(){window.open(CFG.igUrl,'_blank')}
 function retake(){
+  surveyAnswers[1]=null;surveyAnswers[2]=null;surveyAnswers[3]=null;
+  document.querySelectorAll('.survey-opt').forEach(b=>b.classList.remove('picked'));
+  document.getElementById('surveyUnlock').classList.remove('show');
+  const sr=document.getElementById('surveyResult');sr.classList.remove('show');sr.innerHTML='';
+  document.getElementById('surveyUnlock').style.display='';
   selectedFears=[];
   document.querySelectorAll('.fear-item').forEach(el=>el.classList.remove('picked'));
   document.getElementById('fearCount').textContent='已選 0 個（最多 5 個）';
