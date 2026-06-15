@@ -197,9 +197,49 @@ body::before{content:'';position:fixed;inset:0;background:
   .score-bars{padding:20px 22px}
   .btn-sec-row{flex-direction:column}
 }
+
+/* ── Floating Orbs ── */
+#mori-blobs{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;filter:blur(72px)}
+.mblob{position:absolute;border-radius:50%;mix-blend-mode:screen;will-change:transform}
+.mblob--a{width:70vw;height:70vw;top:-18%;left:-15%;background:radial-gradient(circle,rgba(91,141,184,.32) 0%,transparent 65%);animation:moriDrift 26s ease-in-out infinite}
+.mblob--b{width:58vw;height:58vw;top:8%;right:-18%;background:radial-gradient(circle,rgba(107,168,196,.22) 0%,transparent 65%);animation:moriDrift 26s ease-in-out -9s infinite}
+.mblob--c{width:52vw;height:52vw;bottom:-22%;left:18%;background:radial-gradient(circle,rgba(196,169,106,.16) 0%,transparent 65%);animation:moriDrift 26s ease-in-out -18s infinite}
+.mblob--d{width:42vw;height:42vw;top:32%;left:32%;background:radial-gradient(circle,rgba(91,141,184,.10) 0%,transparent 65%);animation:moriSpin 44s linear infinite}
+@keyframes moriDrift{
+  0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(7%,-5%) scale(1.1)}
+  66%{transform:translate(-5%,7%) scale(0.92)}
+}
+@keyframes moriSpin{
+  0%{transform:rotate(0deg)}
+  100%{transform:rotate(360deg)}
+}
+
+/* ── Custom Cursor ── */
+*{cursor:none}
+#cursor-fx{position:fixed;inset:0;pointer-events:none;z-index:9999}
+.cur-dot,.cur-ring{position:fixed;top:0;left:0;pointer-events:none;border-radius:50%;will-change:transform}
+.cur-dot{width:6px;height:6px;background:var(--gold);transform:translate3d(-200px,-200px,0) translate(-50%,-50%);transition:width .12s,height .12s}
+.cur-ring{width:28px;height:28px;border:1.5px solid rgba(196,169,106,.45);background:transparent;transform:translate3d(-200px,-200px,0) translate(-50%,-50%);transition:width .18s,height .18s,border-color .18s,background .18s}
+.cur-ring.is-locked{width:42px;height:42px;border-color:rgba(196,169,106,.75);background:rgba(196,169,106,.06)}
+.cur-ring.is-down{width:18px;height:18px;background:rgba(196,169,106,.1)}
+#cursor-spotlight{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(220px at -999px -999px,rgba(91,141,184,.18),transparent 70%)}
 </style>
 </head>
 <body>
+<!-- Cursor -->
+<div id="cursor-fx" aria-hidden="true">
+  <div class="cur-ring" id="cur-ring"></div>
+  <div class="cur-dot" id="cur-dot"></div>
+</div>
+<div id="cursor-spotlight"></div>
+<!-- Floating Orbs -->
+<div id="mori-blobs" aria-hidden="true">
+  <div class="mblob mblob--a"></div>
+  <div class="mblob mblob--b"></div>
+  <div class="mblob mblob--c"></div>
+  <div class="mblob mblob--d"></div>
+</div>
 <div id="particles-js"></div>
 
 <!-- ══════════════════════════════
@@ -891,22 +931,85 @@ function skipEmail(){
 }
 
 /* ════════════════════════════════
-   PDF
+   PDF / 圖片下載
 ════════════════════════════════ */
-async function downloadPDF(){
-  if(!window.html2pdf){
+function loadScript(src){
+  return new Promise((res,rej)=>{
     const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-    document.head.appendChild(s);
-    await new Promise(r=>{s.onload=r});
+    s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+}
+
+async function downloadPDF(){
+  const btn=document.getElementById('dlBtn');
+  const origHTML=btn.innerHTML;
+  btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 產生中…';
+  btn.disabled=true;
+
+  try{
+    /* Step 1：載入 html2canvas */
+    if(!window.html2canvas){
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    }
+
+    /* Step 2：截取結果卡片 */
+    const target=document.querySelector('#screen-results .card');
+    const canvas=await html2canvas(target,{
+      scale:2,
+      useCORS:true,
+      allowTaint:true,
+      backgroundColor:'#14141F',
+      logging:false,
+      onclone:(doc)=>{
+        /* 在副本裡讓結果頁可見、定位正確 */
+        const scr=doc.getElementById('screen-results');
+        if(scr){
+          scr.style.cssText='display:block!important;position:static!important;opacity:1!important;animation:none!important;width:680px;max-width:680px;margin:0 auto';
+        }
+        /* 隱藏不該出現在截圖裡的覆蓋層 */
+        ['cursor-fx','cursor-spotlight','mori-blobs','particles-js'].forEach(id=>{
+          const ov=doc.getElementById(id);
+          if(ov)ov.style.display='none';
+        });
+        /* 修正 body 定位，避免捕捉到空白區域 */
+        doc.body.style.cssText='background:#0A0A0F;position:static;display:block;padding:24px 16px;align-items:initial;justify-content:initial;min-height:auto';
+      }
+    });
+
+    /* Step 3：嘗試輸出為 PDF（image-based，單頁，顏色完整保留） */
+    let pdfOk=false;
+    try{
+      if(!window.jspdf){
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      }
+      const {jsPDF}=window.jspdf;
+      const pdfW=210; // A4 寬度 mm
+      const pdfH=Math.ceil(pdfW*(canvas.height/canvas.width));
+      const pdf=new jsPDF({unit:'mm',format:[pdfW,pdfH],orientation:'portrait'});
+      pdf.addImage(canvas.toDataURL('image/jpeg',0.93),'JPEG',0,0,pdfW,pdfH);
+      pdf.save(`財富階梯診斷報告_${LVL[lvlKey].badge}.pdf`);
+      pdfOk=true;
+    }catch(pdfErr){
+      console.warn('jsPDF 失敗，降級為 PNG：',pdfErr);
+    }
+
+    /* Step 4：PDF 失敗時下載 PNG */
+    if(!pdfOk){
+      const link=document.createElement('a');
+      link.download=`財富階梯診斷報告_${LVL[lvlKey].badge}.png`;
+      link.href=canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+  }catch(err){
+    console.error('Export failed',err);
+    alert('產生失敗，請截圖儲存。');
+  }finally{
+    btn.innerHTML=origHTML;
+    btn.disabled=false;
   }
-  const d=LVL[lvlKey];
-  html2pdf().set({
-    margin:10,
-    filename:`財富階梯診斷報告_${d.badge}.pdf`,
-    html2canvas:{scale:2,useCORS:true},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-  }).from(document.getElementById('screen-results')).save();
 }
 
 /* ════════════════════════════════
@@ -928,6 +1031,44 @@ function retake(){
   document.querySelector('.btn-skip-email').style.display='';
   go('screen-welcome');
 }
+
+/* ════════════════════════════════
+   Custom Cursor
+════════════════════════════════ */
+(function(){
+  const hasPointer=window.matchMedia?.('(pointer: fine)').matches;
+  const noMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if(!hasPointer||noMotion)return;
+
+  const ring=document.getElementById('cur-ring');
+  const dot=document.getElementById('cur-dot');
+  const spotlight=document.getElementById('cursor-spotlight');
+
+  let sx=-200,sy=-200,rx=-200,ry=-200,rafId;
+
+  function onMove(e){
+    sx=e.clientX; sy=e.clientY;
+    dot.style.transform=`translate3d(${sx}px,${sy}px,0) translate(-50%,-50%)`;
+    spotlight.style.background=`radial-gradient(220px at ${sx}px ${sy}px,rgba(91,141,184,.18),transparent 70%)`;
+    const isActive=e.target instanceof Element&&!!e.target.closest('a,button,[role="button"],input,textarea,.fear-item,.opt,.btn-gold,.btn-next-q,.btn-line,.btn-ghost-sec,.btn-subscribe,.btn-skip-email');
+    ring.classList.toggle('is-locked',isActive);
+  }
+  function onDown(){ring.classList.add('is-down')}
+  function onUp(){ring.classList.remove('is-down')}
+  function onLeave(){sx=-200;sy=-200}
+
+  function loop(){
+    rx+=(sx-rx)*.18; ry+=(sy-ry)*.18;
+    ring.style.transform=`translate3d(${rx}px,${ry}px,0) translate(-50%,-50%)`;
+    rafId=requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('mousemove',onMove,{passive:true});
+  window.addEventListener('mousedown',onDown,{passive:true});
+  window.addEventListener('mouseup',onUp,{passive:true});
+  window.addEventListener('mouseleave',onLeave,{passive:true});
+  rafId=requestAnimationFrame(loop);
+})();
 
 /* ════════════════════════════════
    Particles
