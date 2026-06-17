@@ -964,6 +964,12 @@ async function submitEmail(){
   document.querySelector('.btn-subscribe').disabled=true;
   document.getElementById('emailDone').style.display='block';
   document.querySelector('.btn-skip-email').style.display='none';
+  trackResponse({quiz:'財富階梯',result:lvlKey?LVL[lvlKey]?.badge||lvlKey:'',
+    q1:surveyAnswers[1]||'',q2:surveyAnswers[2]||'',q3:surveyAnswers[3]||'',
+    segment:surveyAnswers[1]==='A'&&(surveyAnswers[2]==='A'||surveyAnswers[2]==='B')&&(surveyAnswers[3]==='A'||surveyAnswers[3]==='B')?'partner':
+            (surveyAnswers[1]==='A'||surveyAnswers[1]==='B')&&(surveyAnswers[2]==='A'||surveyAnswers[2]==='B')&&surveyAnswers[3]!=='D'?'client':
+            surveyAnswers[1]==='C'||((surveyAnswers[2]==='A'||surveyAnswers[2]==='B')&&surveyAnswers[3]==='C')?'warm':'cold',
+    email:v});
   if(CFG.mlKey&&CFG.mlGroup){
     fetch('https://api.mailerlite.com/api/v2/subscribers',{
       method:'POST',
@@ -1092,6 +1098,16 @@ function revealSurveyResult(){
   el.innerHTML=`<div>${msg}</div><div class="survey-result-cta">${cta}</div>`;
   el.classList.add('show');
   document.getElementById('surveyUnlock').style.display='none';
+  const seg=a==='A'&&(b==='A'||b==='B')&&(c==='A'||c==='B')?'partner':
+            (a==='A'||a==='B')&&(b==='A'||b==='B')&&c!=='D'?'client':
+            a==='C'||((b==='A'||b==='B')&&c==='C')?'warm':'cold';
+  trackResponse({quiz:'財富階梯',result:lvlKey?LVL[lvlKey]?.badge||lvlKey:'',q1:a,q2:b,q3:c,segment:seg});
+}
+function trackResponse(data){
+  try{fetch('https://quiz-tracker.mori1024.workers.dev/track',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data),keepalive:true
+  }).catch(()=>{})}catch(e){}
 }
 function openLine(){window.open(CFG.lineUrl,'_blank')}
 function openIG(){window.open(CFG.igUrl,'_blank')}
