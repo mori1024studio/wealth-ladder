@@ -469,8 +469,10 @@ body::before{content:'';position:fixed;inset:0;background:
 const CFG = {
   lineUrl: 'https://line.me/R/ti/p/@507wvwbz',
   igUrl:   'https://instagram.com/mori1024_',
-  mlKey:   '',       // MailerLite Classic API Key
-  mlGroup: '',       // MailerLite 群組 ID
+  mlKey:   '',       // TODO: 填入 MailerLite API key
+  mlGroup: {
+    l1: '',  l2: '',  l3: '',  l4: '',  l5: '',  l6: '',
+  },
   cfCounter: '',     // Cloudflare Workers counter URL
 };
 
@@ -917,12 +919,14 @@ async function submitEmail(){
   document.querySelector('.btn-subscribe').disabled=true;
   document.getElementById('emailDone').style.display='block';
   document.querySelector('.btn-skip-email').style.display='none';
-  if(CFG.mlKey&&CFG.mlGroup){
-    fetch('https://api.mailerlite.com/api/v2/subscribers',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-MailerLite-ApiKey':CFG.mlKey},
-      body:JSON.stringify({email:v,groups:[CFG.mlGroup],fields:{wealth_level:lvlKey?.toUpperCase()}}),
-    }).catch(()=>{});
+  if(CFG.mlKey&&CFG.mlGroup[lvlKey]){
+    try{
+      await fetch('https://connect.mailerlite.com/api/subscribers',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+CFG.mlKey},
+        body:JSON.stringify({email:v,groups:[CFG.mlGroup[lvlKey]]})
+      });
+    }catch(e){}
   }
 }
 
